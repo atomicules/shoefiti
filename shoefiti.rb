@@ -2,71 +2,72 @@ require 'rubygems'
 require 'date'
 require 'json'
 
-Shoes.app :title => "Shoefiti - Librelist Browser" do
-	URL = "http://librelist.com/archives/"
-	@listurl = ""
+Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => false do
+	
 	def getlist
 		download(URL+@listurl) do |list|
 			@lists = eval(list.response.body)[1]
 			@place = eval(list.response.body)[0].split("/")
-			debug(@lists)
-			debug(@place)
-			stack do
+			#debug(@lists)
+			#debug(@place)
+			stack :margin => 10 do
+				@loading.hide
+				@animate.stop
+				@loaded.show
 				if @place.length < 5 #Need to break out of this once we get to the list of days. Odd array length due to split on /
 					list_box :items => @lists do |list|
 						@listurl += list.text
 						getlist
 					end
 				else
-							#debug("Pop1")
-							#debug(@place.pop)
-							#debug("Pop2")
-							#debug(@place.pop)
-							drawcalendar(@place.pop.to_i, @place.pop.to_i, @place.pop.to_s, @lists)	#pass @lists?	
+					#debug("Pop1 "+@place.pop) #Turning on these debugs will break app since popping items from array
+					#debug("Pop2 "+@place.pop)
+					drawcalendar(@place.pop.to_i, @place.pop.to_i, @place.pop.to_s, @lists)
+					drawmailpane #Can't draw mailpane before now, as otherwise threading in getlist downloads results in drop downs appearing below mailpane
 				end	
 			end		
 		end
 	end
 
-	getlist
-
 
 	def drawcalendar(month, year, list, maildays)
-	off=Date.new(year, month, 01).wday-1 #Offset, not sure wh yI need the -1 here, but I do.
-	mdays=(Date.new(year, 12, 31) << (12-month)).day #Days in the month
-	rows=((mdays+off+1).to_f/7.0).ceil #Number of rows in calendar, plus 1 to compensate for -1 above. Have confused myself
+		off=Date.new(year, month, 01).wday-1 #Offset, not sure why I need the -1 here, but I do.
+		mdays=(Date.new(year, 12, 31) << (12-month)).day #Days in the month
+		rows=((mdays+off+1).to_f/7.0).ceil #Number of rows in calendar, plus 1 to compensate for -1 above. Have confused myself
 		days = %w{Su Mo Tu We Th Fr Sa}
 		days.each do |column|
 			i = days.index(column)
 			row = 0
-			stack :left => i*50, :top => 100 do
+			stack :left => i*40+250, :top => -150 do
 				para column
 				until row == rows do
 					calday = i-off+7*row
 					if (1..mdays) === calday #Only want to draw if greater than zero and less than max days
 						if calday.to_s.length == 1
-							caldaystr = "0"+calday.to_s
+							caldaystr = "0"+calday.to_s #need "0" in front of single digits
 						else
 							caldaystr = calday.to_s
 						end
-						if maildays.include?(caldaystr+"/") #deal with "0" in front of single digits
+						if maildays.include?(caldaystr+"/") 
 							para make_date_link(list, year, month, calday)
 						else
 							para calday
 						end
 					else 
 						para ""
-					end#
+					end
 					row += 1
 				end
 			end
 		end
 	end
 
+
 	def make_date_link(list, year, month, day) #http://thread.gmane.org/gmane.comp.lib.shoes/4042/focus=4044
 		link(day){getmails(list, year, month, day)}
 	end
 	
+
 	def getmails(list, year, month, day)
 		#need to fix months and days here, ie 0 on front.
 		if month.to_s.length == 1
@@ -80,25 +81,50 @@ Shoes.app :title => "Shoefiti - Librelist Browser" do
 			day = day.to_s
 		end
 		url = "http://librelist.com/archives/"+list+"/"+year.to_s+"/"+month.to_s+"/"+day.to_s+"/json/"
-		debug(url)
+		#debug(url)
 		download(url) do |data|
 			emails = eval(data.response.body)[1]
-			debug(emails.length)
+			#debug(emails.length)
 			emails.each do |message|
 				download(url+message) do |data|
 					js = JSON.parse(data.response.body)
-					stack :margin => 10, :width => 400 do
-							border black, :strokewidth => 3, :curve => 5 
-							inscription js["headers"]["Date"]
-							inscription js["headers"]["From"]
-							inscription js["headers"]["Subject"]
-					end
-						#para js["body"] #Need to sanatize this a bit for output
+					@messagelist.clear{
+						stack :margin => 30, :width => 550 do
+								border black, :strokewidth => 2 
+								inscription js["headers"]["Date"]
+								inscription js["headers"]["From"]
+								inscription js["headers"]["Subject"]
+								#message body can end up in one of two places
+								if js["body"] 
+									para js["body"].to_s #Need to sanatize this a bit for output??
+								else 
+									para js["parts"][0]["body"].to_s
+								end
+						end
+					}
 				end
 			end
-				# Where to store all these? Or just draw straight away?
 		end
 	end
-		
+
+	
+	def drawmailpane
+		@messagelist = stack :height => 425, :scroll => true 
+	end
+
+	
+	@loading = para "Loading Lists...", :margin => 10
+	@animate = animate(5) do |frame|
+		weight = ["bold", "normal"]
+		@loading.style(:weight => weight[frame&1])	
+	end
+	@loaded = para "Pick list to browse", :margin => 10
+	@loaded.hide
+
+	URL = "http://librelist.com/archives/"
+	@listurl = ""
+	
+	getlist 		
+	
 
 end
