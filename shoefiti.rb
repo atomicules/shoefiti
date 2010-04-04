@@ -85,10 +85,12 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		download(url) do |data|
 			emails = eval(data.response.body)[1]
 			#debug(emails.length)
+			@messagelist.clear{
+			stack  do
 			emails.each do |message|
 				download(url+message) do |data|
 					js = JSON.parse(data.response.body)
-					@messagelist.clear{
+					@messagelist.append{
 						stack :margin => 30, :width => 550 do
 								border black, :strokewidth => 2 
 								inscription js["headers"]["Date"]
@@ -104,6 +106,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 					}
 				end
 			end
+			end}
 		end
 	end
 
