@@ -4,6 +4,16 @@ require 'json'
 
 Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => false do
 	
+	#Clever, but utimately useless if want to re-select something. I.e. different mailing list.
+	#Perhaps mix in with Classes??
+	#only works once. 
+	
+	#class listsel
+	#	url
+		#extend the list_box method? I.e. what gets executed on selection?
+		#
+	
+
 	def getlist
 		download(URL+@listurl) do |list|
 			@lists = eval(list.response.body)[1]
@@ -15,10 +25,15 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 				@animate.stop
 				@loaded.show
 				if @place.length < 5 #Need to break out of this once we get to the list of days. Odd array length due to split on /
-					list_box :items => @lists do |list|
-						@listurl += list.text
-						getlist
-					end
+					
+					make_list_box(@lists)
+
+					
+					#list_box :items => @lists do |list|
+					#	debug(@lists)
+					#	@listurl += list.text
+					#	getlist
+					#end
 				else
 					#debug("Pop1 "+@place.pop) #Turning on these debugs will break app since popping items from array
 					#debug("Pop2 "+@place.pop)
@@ -26,6 +41,16 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 					drawmailpane #Can't draw mailpane before now, as otherwise threading in getlist downloads results in drop downs appearing below mailpane
 				end	
 			end		
+		end
+	end
+
+
+	#This half works and makes sure lists retain their 'lists'
+	def make_list_box(lists)
+		list_box :items => lists do |list|
+			@listurl += list.text
+			debug(lists)
+			getlist
 		end
 	end
 
