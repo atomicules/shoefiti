@@ -13,10 +13,52 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		#extend the list_box method? I.e. what gets executed on selection?
 		#
 	
+#must reset
+	
+	@stack_list = stack :margin => 10 do
+		
+		@list_list = list_box do |list| 
+			@stack_day.hide
+			download(URL+list.text) do |resp|
+				@list_year.items = eval(resp.response.body)[1]
+				@stack_year.show
+			end
+		end
+	end
 
-	def getlist
-		download(URL+@listurl) do |list|
-			@lists = eval(list.response.body)[1]
+
+	@stack_year = stack :margin => 10 do
+		@list_year = list_box do |year|
+
+			download(URL+@list_list.text+year.text) do |resp|
+				@list_day.items =  eval(resp.response.body)[1]
+				@stack_day.show
+			end
+		end
+	end
+
+	@stack_day = stack :margin => 10 do
+		@list_day = list_box do |day|
+			download(URL+@list_list.text+@list_year.text+day.text) do |resp|
+				@place = eval(resp.response.body)[0].split("/")
+				drawcalendar(@place.pop.to_i, @place.pop.to_i, @place.pop.to_s, eval(resp.response.body)[1])
+				drawmailpane
+			end
+		end
+	end
+
+
+
+
+	
+	def init
+		download(URL) do |resp|
+			@list_list.items = eval(resp.response.body)[1]
+			@stack_list.show
+		end
+	end
+
+=begin
 			@place = eval(list.response.body)[0].split("/")
 			#debug(@lists)
 			#debug(@place)
@@ -53,8 +95,9 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 			getlist
 		end
 	end
+=end
 
-
+	#Need to clear and redraw like mailpane
 	def drawcalendar(month, year, list, maildays)
 		off=Date.new(year, month, 01).wday-1 #Offset, not sure why I need the -1 here, but I do.
 		mdays=(Date.new(year, 12, 31) << (12-month)).day #Days in the month
@@ -63,7 +106,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		days.each do |column|
 			i = days.index(column)
 			row = 0
-			stack :left => i*40+250, :top => -150 do
+			stack :left => i*40+250, :top => 0 do
 				para column
 				until row == rows do
 					calday = i-off+7*row
@@ -140,7 +183,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		@messagelist = stack :height => 425, :scroll => true 
 	end
 
-	
+=begin	
 	@loading = para "Loading Lists...", :margin => 10
 	@animate = animate(5) do |frame|
 		weight = ["bold", "normal"]
@@ -148,11 +191,18 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 	end
 	@loaded = para "Pick list to browse", :margin => 10
 	@loaded.hide
+=end
 
 	URL = "http://librelist.com/archives/"
 	@listurl = ""
 	
-	getlist 		
+
+
+	@stack_list.hide
+	@stack_year.hide
+	@stack_day.hide
+
+	init 		
 	
 
 end
