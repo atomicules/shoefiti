@@ -103,10 +103,11 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		mdays=(Date.new(year, 12, 31) << (12-month)).day #Days in the month
 		rows=((mdays+off+1).to_f/7.0).ceil #Number of rows in calendar, plus 1 to compensate for -1 above. Have confused myself
 		days = %w{Su Mo Tu We Th Fr Sa}
+		@stack_cal.clear{
 		days.each do |column|
 			i = days.index(column)
 			row = 0
-			stack :left => i*40+250, :top => 0 do
+			stack :left => i*40+250, :top => -100 do
 				para column
 				until row == rows do
 					calday = i-off+7*row
@@ -127,7 +128,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 					row += 1
 				end
 			end
-		end
+		end}
 	end
 
 
@@ -201,6 +202,9 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 	@stack_list.hide
 	@stack_year.hide
 	@stack_day.hide
+
+	@stack_cal = stack do
+	end
 
 	init 		
 	
