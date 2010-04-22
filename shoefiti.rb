@@ -4,42 +4,65 @@ require 'json'
 
 Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => false do
 	
-	#Remove clever, but useless way of defining list boxes, and define each separately:	
-	#Mailing list
+	URL = "http://librelist.com/archives/"
+
+	#Try doing single list box owing to list_box troubles on shoes MinGW
+	#More closely mimics the web interface
 	@stack_list = stack :margin => 10 do
 		
 		@list_list = list_box do |list| 
-			@stack_day.hide
-			@stack_cal.hide
-			download(URL+list.text) do |resp|
-				@list_year.items = eval(resp.response.body)[1]
-				@stack_year.show
+			@list = list.text	
+			download(URL+@list) do |resp|
+				@year = eval(resp.response.body)[1][-1].to_i
+				debug(@year)
+				download(URL+@list+@year.to_s) do |resp|
+					@month = eval(resp.response.body)[1][-1].to_i
+					debug(@month)
+					download(URL+@list+@year.to_s+"/"+(0 if @month < 10).to_s+@month.to_s) do |resp|
+						@days = eval(resp.response.body)[1]
+						debug(@days)
+						@when.replace(@month.to_s, " ", @year.to_s)
+						drawcalendar(@list, @year, @month, @days)
+					end
+				end
 			end
 		end
 	end
 
-	#Year
-	@stack_year = stack :margin => 10 do
-		@list_year = list_box do |year|
-			@stack_cal.hide
-			download(URL+@list_list.text+year.text) do |resp|
-				@list_day.items =  eval(resp.response.body)[1]
-				@stack_day.show
+			
+	def changemonth(direction)
+		if direction == :backward
+			if @month == 1 #tempting to do "12/".next but no corresponding previous
+				@year -= 1
+				@month = 12
+			else
+				@month -= 1
 			end
+		end
+		if direction == :forward
+			if @month == 12
+				@year += 1
+				@month = 1
+			else
+				@month += 1
+			end
+		end
+		debug(@year)
+		debug(@month)
+		download(URL+@list+@year.to_s+"/"+(0 if @month < 10).to_s+@month.to_s) do |resp|
+			@days = eval(resp.response.body)[1]
+			debug(@days)
+			#@stack_cal.show
+			#@stack_cal_nav.show
+			@when.replace(@month.to_s, " ", @year.to_s)
+			drawcalendar(@list, @year, @month, @days)
 		end
 	end
 	
-	#Month
-	@stack_day = stack :margin => 10 do
-		@list_day = list_box do |day|
-			download(URL+@list_list.text+@list_year.text+day.text) do |resp|
-				@place = eval(resp.response.body)[0].split("/")
-				@stack_cal.show
-				drawcalendar(@place.pop.to_i, @place.pop.to_i, @place.pop.to_s, eval(resp.response.body)[1])
-			end
-		end
-	end
 
+	
+	#Need to be careful not to get months that don't exist (think ok back in time, within reason??)
+	
 		
 	def init
 		download(URL) do |resp|
@@ -50,8 +73,9 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 
 
 	#Need to clear and redraw like mailpane
-	def drawcalendar(month, year, list, maildays)
-		off=Date.new(year, month, 01).wday-1 #Offset, not sure why I need the -1 here, but I do.
+	def drawcalendar(list, year, month, maildays)
+		debug("Where's the calendar?")
+		off=Date.new(year, month, 01).wday-1 #Offset, can't remember why I need the -1 here, but I do.
 		mdays=(Date.new(year, 12, 31) << (12-month)).day #Days in the month
 		rows=((mdays+off+1).to_f/7.0).ceil #Number of rows in calendar, plus 1 to compensate for -1 above. Have confused myself
 		days = %w{Su Mo Tu We Th Fr Sa}
@@ -60,7 +84,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		days.each do |column|
 			i = days.index(column)
 			row = 0
-			stack :left => i*40+250, :top => -100 do
+			stack :left => i*40+250, :top => -30 do
 				para column
 				until row == rows do
 					calday = i-off+7*row
@@ -93,7 +117,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 	def getmails(list, year, month, day)
 		#need to fix months and days here, ie 0 on front.
 		if month.to_s.length == 1
-			month = "0"+month.to_s
+			month = "0"+month.to_s #Mr. Consistent. Done differently from the urls!
 		else
 			month = month.to_s
 		end
@@ -133,20 +157,29 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 	end
 
 	
-	def drawmailpane
-		@messagelist = stack :height => 425, :scroll => true 
-	end
-
+	
 	
 	#Actual app stuff
-	URL = "http://librelist.com/archives/"
 	@listurl = ""
-	@stack_list.hide
-	@stack_year.hide
-	@stack_day.hide
+	
+	@stack_cal_nav = stack do
+		button "<" do
+			changemonth(:backward)
+		end
+		@when = para "When"
+		button ">" do
+			changemonth(:forward)
+		end
+	end
+
+
+
 	@stack_cal = stack do
+		para "Calendar"
 	end
 	init 		
-	drawmailpane #No real need for drawmailpane function, get rid of this
+	@messagelist = stack :height => 425, :scroll => true 
+	#@stack_cal.hide
+	#@stack_cal_nav.hide
 
 end
