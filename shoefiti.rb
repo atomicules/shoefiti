@@ -4,32 +4,8 @@ require 'json'
 
 Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => false do
 	
-	URL = "http://librelist.com/archives/"
 
-	#Try doing single list box owing to list_box troubles on shoes MinGW
-	#More closely mimics the web interface
-	@stack_list = stack :margin => 10 do
-		
-		@list_list = list_box do |list| 
-			@list = list.text	
-			download(URL+@list) do |resp|
-				@year = eval(resp.response.body)[1][-1].to_i
-				debug(@year)
-				download(URL+@list+@year.to_s) do |resp|
-					@month = eval(resp.response.body)[1][-1].to_i
-					debug(@month)
-					download(URL+@list+@year.to_s+"/"+(0 if @month < 10).to_s+@month.to_s) do |resp|
-						@days = eval(resp.response.body)[1]
-						debug(@days)
-						@when.replace(@month.to_s, " ", @year.to_s)
-						drawcalendar(@list, @year, @month, @days)
-					end
-				end
-			end
-		end
-	end
-
-			
+	#Need to be careful not to get months that don't exist (think ok back in time, within reason??)
 	def changemonth(direction)
 		if direction == :backward
 			if @month == 1 #tempting to do "12/".next but no corresponding previous
@@ -59,10 +35,6 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		end
 	end
 	
-
-	
-	#Need to be careful not to get months that don't exist (think ok back in time, within reason??)
-	
 		
 	def init
 		download(URL) do |resp|
@@ -84,7 +56,7 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		days.each do |column|
 			i = days.index(column)
 			row = 0
-			stack :left => i*40+250, :top => -30 do
+			stack :left => i*40, :top => 10 do
 				para column
 				until row == rows do
 					calday = i-off+7*row
@@ -155,31 +127,51 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 			end}
 		end
 	end
-
-	
 	
 	
 	#Actual app stuff
-	@listurl = ""
-	
-	@stack_cal_nav = stack do
-		button "<" do
-			changemonth(:backward)
+	URL = "http://librelist.com/archives/"
+
+	#Try doing single list box owing to list_box troubles on shoes MinGW
+	#More closely mimics the web interface
+	flow :width => "100%" do
+		stack :width => "40%" do 
+			@stack_list = stack :margin => 10 do
+				@list_list = list_box do |list| 
+					@list = list.text	
+					download(URL+@list) do |resp|
+						@year = eval(resp.response.body)[1][-1].to_i
+						debug(@year)
+						download(URL+@list+@year.to_s) do |resp|
+							@month = eval(resp.response.body)[1][-1].to_i
+							debug(@month)
+							download(URL+@list+@year.to_s+"/"+(0 if @month < 10).to_s+@month.to_s) do |resp|
+								@days = eval(resp.response.body)[1]
+								debug(@days)
+								@when.replace(@month.to_s, " ", @year.to_s)
+								drawcalendar(@list, @year, @month, @days)
+							end
+						end
+					end
+				end
+			end
+			@listurl = ""
+			@stack_cal_nav = stack :margin => 10 do
+				button "<" do
+					changemonth(:backward)
+				end
+				@when = para " "
+				@when.style :margin => 10
+				button ">" do
+					changemonth(:forward)
+				end
+			end
 		end
-		@when = para "When"
-		button ">" do
-			changemonth(:forward)
+		@stack_cal = stack :width => "60%" do
+			para " "
 		end
 	end
-
-
-
-	@stack_cal = stack do
-		para "Calendar"
-	end
-	init 		
 	@messagelist = stack :height => 425, :scroll => true 
-	#@stack_cal.hide
-	#@stack_cal_nav.hide
+	init 	
 
 end
