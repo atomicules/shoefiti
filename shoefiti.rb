@@ -3,6 +3,51 @@ require 'date'
 require 'json'
 
 Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => false do
+
+class Email
+
+	#What about what class retains in memory? Do I need to flush the class?
+	#Perhaps need to hand list, month, day, year attributes. 
+	#don't need to rely on time in email. Just set an index based on order that librelist presents them??
+
+	attr_accessor :date, :from, :subject, :body
+
+	def initialize(date, from, subject, body)
+		@date = date
+		@from = from
+		@subject = subject
+		@body = body
+		#@thread = subject.strip of RE, FW, etc. 
+		#Want to set thread. Based on subject?
+	end
+
+=begin
+	def self.sort_by_thread(thread) ???
+		#!
+		ObjectSpace.each_object(Email) do |e|
+			e.thread == 
+
+	end
+=end
+
+	def self.draw_all
+		ObjectSpace.each_object(Email) do |e|
+
+			#@messagelist.append{
+				stack :margin => 30, :width => 550 do #Is this understood here? Some of this is not working.
+					border black, :strokewidth => 2 
+					inscription e.date
+					inscription e.from
+					inscription e.subject
+					para e.body.to_s
+				end
+			#}
+		end
+	end
+
+end
+
+
 	
 
 	#Need to be careful not to get months that don't exist (think ok back in time, within reason??)
@@ -102,29 +147,30 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 		#debug(url)
 		download(url) do |data|
 			emails = eval(data.response.body)[1]
-			#debug(emails.length)
+			
+		
 			@messagelist.clear{
-			stack  do
-			emails.each do |message|
-				download(url+message) do |data|
-					js = JSON.parse(data.response.body)
-					@messagelist.append{
-						stack :margin => 30, :width => 550 do
-								border black, :strokewidth => 2 
-								inscription js["headers"]["Date"]
-								inscription js["headers"]["From"]
-								inscription js["headers"]["Subject"]
-								#message body can end up in one of two places
+				stack do
+					emails.each do |message|
+						download(url+message) do |data|
+							js = JSON.parse(data.response.body)
+							Email.new(
+								js["headers"]["Date"], 
+								js["headers"]["From"], 
+								js["headers"]["Subject"],
 								if js["body"] 
-									para js["body"].to_s #Need to sanatize this a bit for output??
+									para js["body"]
 								else 
-									para js["parts"][0]["body"].to_s
+									para js["parts"][0]["body"]
 								end
+							)
 						end
-					}
+						#Ah but need to be sure thread finished! Could still draw one at a time.
+						#Assuming finished:
+						Email.draw_all #list, date?
+					end
 				end
-			end
-			end}
+			}
 		end
 	end
 	
@@ -175,3 +221,12 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 	init 	
 
 end
+
+#What would make this useful?? 
+#Grouping by thread/subject - collapsible sections. 
+#
+#For now really have to keep everything to "one day" 
+#
+#How to do this ? Could set up a class! for messages
+
+
