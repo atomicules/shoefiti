@@ -1,0 +1,9 @@
+h1. Shoefiti
+
+A "not very good" "Librelist":http://librelist.com/ browser written in "Shoes":http://github.com/shoes/shoes.
+
+This was started when the "Librelist archive browser":http://librelist.com/browser/ was a simple list of lists and a calendar. You had to guess what days had messages by clicking on the calendar to load them. So this app was modelled on that interface, but with the improvement of indicating which days have messages. Since I started this, the Librelist archive page has been re-jigged and now you can browse by thread (much better!) - the only potential/slight/current benefit this app has is that it's realtime (the archives seem to have a delay(bug?) archving recent messages).
+
+If I can figure out a good way, I'll try to do email threading in this.
+
+!./screenshots/shoefiti.v0.0.1.png!
