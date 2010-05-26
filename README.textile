@@ -6,8 +6,12 @@ This was started when the "Librelist archive browser":http://librelist.com/brows
 
 If I can figure out a good way, I'll try to do email threading in this.
 
-!https://github.com/i5m/shoefiti/raw/master/screenshots/shoefiti.v0.0.1.png!
-
 h2. Download
 
 Use the latest tagged release of shoefiti.rb. Requires Shoes (duh!).
+
+h2. Screenshot
+
+!https://github.com/i5m/shoefiti/raw/master/screenshots/shoefiti.v0.0.1.png!
+
+
