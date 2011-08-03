@@ -1,8 +1,8 @@
-require 'rubygems'
+require 'green_shoes'
 require 'date'
 require 'json'
 
-Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => false do
+Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700 do#, :scroll => false do
 	
 
 	#Need to be careful not to get months that don't exist (think ok back in time, within reason??)
@@ -23,11 +23,11 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 				@month += 1
 			end
 		end
-		debug(@year)
-		debug(@month)
+		puts @year
+		puts @month
 		download(URL+@list+@year.to_s+"/"+(0 if @month < 10).to_s+@month.to_s) do |resp|
 			@days = eval(resp.response.body)[1]
-			debug(@days)
+			puts @days
 			#@stack_cal.show
 			#@stack_cal_nav.show
 			@when.replace(@month.to_s, " ", @year.to_s)
@@ -46,13 +46,13 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 
 	#Need to clear and redraw like mailpane
 	def drawcalendar(list, year, month, maildays)
-		debug("Where's the calendar?")
+		puts "Where's the calendar?"
 		off=Date.new(year, month, 01).wday-1 #Offset, can't remember why I need the -1 here, but I do.
 		mdays=(Date.new(year, 12, 31) << (12-month)).day #Days in the month
 		rows=((mdays+off+1).to_f/7.0).ceil #Number of rows in calendar, plus 1 to compensate for -1 above. Have confused myself
 		days = %w{Su Mo Tu We Th Fr Sa}
 		@messagelist.clear
-		@stack_cal.clear{
+		@stack_cal = flow do #{
 		days.each do |column|
 			i = days.index(column)
 			row = 0
@@ -77,7 +77,8 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 					row += 1
 				end
 			end
-		end}
+		end#}
+		end
 	end
 
 
@@ -134,20 +135,20 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 
 	#Try doing single list box owing to list_box troubles on shoes MinGW
 	#More closely mimics the web interface
-	flow :width => "100%" do
-		stack :width => "40%" do 
+	flow :width => 1.0 do
+		stack :width => 0.4 do 
 			@stack_list = stack :margin => 10 do
 				@list_list = list_box do |list| 
 					@list = list.text	
 					download(URL+@list) do |resp|
 						@year = eval(resp.response.body)[1][-1].to_i
-						debug(@year)
+						puts @year
 						download(URL+@list+@year.to_s) do |resp|
 							@month = eval(resp.response.body)[1][-1].to_i
-							debug(@month)
+							puts @month
 							download(URL+@list+@year.to_s+"/"+(0 if @month < 10).to_s+@month.to_s) do |resp|
 								@days = eval(resp.response.body)[1]
-								debug(@days)
+								puts @days
 								@when.replace(@month.to_s, " ", @year.to_s)
 								drawcalendar(@list, @year, @month, @days)
 							end
@@ -167,11 +168,11 @@ Shoes.app :title => "Shoefiti - Librelist Browser", :height => 700, :scroll => f
 				end
 			end
 		end
-		@stack_cal = stack :width => "60%" do
+		@stack_cal = stack :width => 0.6 do
 			para " "
 		end
 	end
-	@messagelist = stack :height => 425, :scroll => true 
+	@messagelist = stack :height => 425#, :scroll => true 
 	init 	
 
 end
